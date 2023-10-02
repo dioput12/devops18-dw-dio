@@ -64,25 +64,27 @@ sesuai dengan konfigurasi *Reverse Proxy* yang ada.
 
 ```dockerfile
 # Frontend (wayshub-frontend/Dockerfile)
-FROM node:14-alpine
+FROM node:14-alpine as build
 
 WORKDIR /app
 COPY . .
 RUN npm install
+
+FROM node:14-alpine
 
 EXPOSE 3000
 
 CMD ["npm","start"]
 
 # Backend (wayshub-backend/Dockerfile)
-FROM node:14-alpine
+FROM node:14-alpine as build
 
 WORKDIR /app
 COPY . .
 RUN npm install
 RUN npm install -g sequelize-cli
-RUN sequelize db:create
-RUN sequelize db:migrate
+
+FROM node:14-alpine
 
 EXPOSE 5000
 
