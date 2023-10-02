@@ -57,3 +57,66 @@ repositori *GitHub* dari proyek yang ada agar dikirim perintah *(Request)* oleh 
 
 ![20231002_10](/assets/images/20231002_10.png)
 
+11. Jika ada aktivitas dari repositori privat yang digunakan, maka akan dikirim dari GitHub ke
+Jenkins yang berjalan. Berikut adalah format **Jenkinsfile** yang digunakan:
+
+```txt
+def dir = "~/wayshub-frontend"
+def cred = "appserver"
+//def server = "dioput@http://<jenkins_ip_or_url>:<port>"
+def docker = "dioput12"
+def branch = "main"
+
+pipeline{
+       agent any
+       stages{
+               stage("Git pull"){
+                       steps{
+                               sshagent([cred]){
+                               sh """ssh -o StrictHostKeyChecking=no ${server} << EOT
+                               cd ${dir}
+                               git pull origin ${branch}
+                               exit
+                               EOT"""
+                               }
+                       }
+               }
+               stage("Docker frontend image"){
+                       steps{
+                               sshagent([cred]){
+                               sh """ssh -o StrictHostKeyChecking=no ${server} << EOT
+                               cd ${dir}
+                               docker build -t ${docker}/wayshub-frontend .
+                               exit
+                               EOT"""
+                               }
+                       }
+               }
+               stage("Docker push"){
+                       steps{
+                               sshagent([cred]){
+                               sh """ssh -o StrictHostKeyChecking=no ${server} << EOT
+                               cd ${dir}
+                               docker login -u ${docker}
+                               docker push ${docker}/wayshub-frontend
+                               exit
+                               EOT"""
+                               }
+                       }
+               }
+               stage("Docker compose up"){
+                       steps{
+                               sshagent([cred]){
+                               sh """ssh -o StrictHostKeyChecking=no ${server} << EOT
+                               cd $HOME
+                               docker compose up -d
+                               exit
+                               EOT"""
+                               }
+                       }
+               }
+        }
+}
+```
+
+![20231002_11](/assets/images/20231002_11.png)
