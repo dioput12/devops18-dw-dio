@@ -64,27 +64,51 @@ sesuai dengan konfigurasi *Reverse Proxy* yang ada.
 
 ```dockerfile
 # Frontend (wayshub-frontend/Dockerfile)
-FROM node:14-alpine as build
+# Stage 1
+FROM node:14-alpine AS build
 
 WORKDIR /app
-COPY . .
-RUN npm install
 
+COPY . .
+
+RUN yarn install --production && yarn build
+
+# Stage 2
 FROM node:14-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/public ./public
+COPY --from=build /app/src ./src
+COPY --from=build /app/package.json .
 
 EXPOSE 3000
 
-CMD ["npm","start"]
+CMD ["yarn","start"]
 
 # Backend (wayshub-backend/Dockerfile)
-FROM node:14-alpine as build
+# Stage 1
+FROM node:14-alpine AS build
 
 WORKDIR /app
-COPY . .
-RUN npm install
-RUN npm install -g sequelize-cli
 
+COPY . .
+
+RUN npm install
+
+# Stage 2
 FROM node:14-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/config ./config
+COPY --from=build /app/migrations ./migrations
+COPY --from=build /app/models ./models
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/src ./src
+COPY --from=build /app/index.js .
+COPY --from=build /app/package.json .
 
 EXPOSE 5000
 
