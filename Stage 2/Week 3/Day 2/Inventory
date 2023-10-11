@@ -1,0 +1,5 @@
+[appserver]
+api.dio.studentdumbways.my.id ansible_user="dioput"
+
+[gateway]
+dio.studentdumbways.my.id ansible_user="dioput"

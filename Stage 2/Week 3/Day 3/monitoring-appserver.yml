@@ -1,0 +1,60 @@
+- become: true
+  gather_facts: false
+  hosts: appserver
+  tasks:
+  - name: "Prometheus Data for Docker Volume"
+    file:
+      path: "/opt/data/prometheus"
+      state: directory
+      mode: '0777'
+  - name: "Grafana Data for Docker Volume"
+    file:
+      path: "/opt/data/grafana"
+      state: directory
+      mode: '0777'
+  - name: "Prometheus Config"
+    copy:
+      dest: "/tmp/prometheus.yml"
+      content: |
+        global:
+          scrape_interval: 30s
+
+        scrape_configs:
+          - job_name: 'appserver'
+
+            scrape_interval: 10s
+
+            static_configs:
+              - targets: ['api.dio.studentdumbways.my.id:9100','dio.studentdumbways.my.id:9100']
+  - name: "Install Grafana and Friends"
+    community.docker.docker_compose:
+      project_name: monitoring
+      definition:
+        version: '2'
+        services:
+          # Node Exporter
+          node-exporter:
+            image: bitnami/node-exporter
+            ports:
+              - 9100:9100
+          # Prometheus
+          prometheus:
+            image: prom/prometheus
+            ports:
+              - 9090:9090
+            volumes:
+              - /tmp/prometheus.yml:/etc/prometheus/prometheus.yml
+              - /opt/data/prometheus:/prometheus
+            depends_on:
+              - node-exporter
+          # Grafana
+          grafana:
+            image: grafana/grafana
+            ports:
+              - 3000:3000
+            volumes:
+              - /opt/data/grafana:/var/lib/grafana
+            depends_on:
+              - prometheus
+      state: present
+    register: output
