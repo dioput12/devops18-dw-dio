@@ -1,0 +1,47 @@
+- name: "Batch tasks"
+  become: true
+  gather_facts: false
+  hosts: all
+  tasks:
+    - name: "Docker Dependencies"
+      apt:
+        update_cache: true
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+    - name: "Docker GPG Key"
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+    - name: "Docker Repository"
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu {{version}} stable
+    - name: "Docker Packages"
+      apt:
+        update-cache: true
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+    - name: "PIP for Python"
+      apt:
+        name: python3-pip
+        state: latest
+        update_cache: true
+    - name: "Docker SDK for Python"
+      pip:
+        name:
+          - docker
+          - docker-compose
+        state: latest
+    - name: "Adding Docker User"
+      user:
+        name: "{{ ansible_user }}"
+        groups: sudo,docker
+        append: yes
+
+  vars:
+    version: focal
